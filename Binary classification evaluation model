@@ -1,0 +1,80 @@
+# 다양한 척도; 오류율, 정확도, 민감도, 특이도, 정밀도, 위양성률, F Beta Score 등
+# 목표: 평가를 위해 모든 지표를 추출하고, Roc curve, PR graph 시각화하기
+
+class Evaluation(): #X는 input 데이터, y는 이진분류 데이터. 모델은 로지스틱 회귀 모델
+  def __init__(self,X,y):
+    self.X = X
+    self.y = y
+  def LogisticRegression(self): #모델1; 로지스틱 회귀 모형
+    import numpy as np
+    from sklearn.linear_model import LogisticRegression
+    from sklearn.model_selection import train_test_split
+    self.X = np.array(self.X).reshape(-1,1)
+    self.y = np.array(self.y).reshape(-1,1)
+    global model
+    model = LogisticRegression().fit(self.X, self.y)
+    global y_pred
+    y_pred = model.predict(self.X)    
+
+  def Roc_curve(self): #Roc 커브 생성
+    from sklearn.datasets import make_classificationg
+    from sklearn.linear_model import LogisticRegression
+    from sklearn.metrics import roc_curve
+    import pandas as pd
+    import matplotlib.pyplot as plt
+    import numpy as np 
+    f_value = model.decision_function(self.X)
+    fpr, tpr, thresholds = roc_curve(self.y, model.predict_proba(self.X)[:, 1])   
+    plt.plot(fpr, tpr, 'r-', label="Logistic Regression")
+    plt.plot([0, 1], [0, 1], 'o--', label="random guess")
+    plt.xlabel('Fall-Out')
+    plt.ylabel('Recall')
+    plt.title('ROC')
+    plt.show()
+  
+  def evaluation(self): #척도 : 정확도, 정밀도, 재현율, F-beta score, mAP, AUC, EP ; d
+    from sklearn.metrics import confusion_matrix
+    from sklearn.linear_model import LogisticRegression
+    model = LogisticRegression().fit(self.X, self.y)
+    y_pred = model.predict(self.X)
+    matrix = confusion_matrix(self.y, y_pred, labels=[1, 0])
+    TP = matrix[0][0]
+    FN = matrix[0][1]
+    FP = matrix[1][0]
+    TN = matrix[1][1]
+    acc = (TP + FN) / (TP + TN + FN + FP)
+    precision = TP / (TN + FP)
+    recall = TP / (TP + FN)
+    f_beta_1 = (2*(precision + recall))/(precision + recall)
+    f_beta_0_5 = 1.25 * (precision + recall) / ((1.25 * precision) + recall)
+    f_beta_2 = 5 * (precision * recall) / (4 * precision + recall)
+
+    import pandas as pd
+    df =pd.DataFrame({
+        'Accurary' : [acc],
+        'Precision' : [precision],
+        'Recall' : [recall],
+        'f_1_score' : [f_beta_1],
+        'f_0_5_score' : [f_beta_0_5],
+        'f_2_score' : [f_beta_2]}
+    )
+    print(df)
+
+  def PR_graph(self):
+    from sklearn.metrics import confusion_matrix
+    from sklearn.linear_model import LogisticRegression
+    model = LogisticRegression().fit(self.X, self.y)
+    y_pred = model.predict(self.X)
+    matrix = confusion_matrix(self.y, y_pred, labels=[1, 0])
+    TP = matrix[0][0]
+    FN = matrix[0][1]
+    FP = matrix[1][0]
+    TN = matrix[1][1]
+    acc = (TP + FN) / (TP + TN + FN + FP)
+    precision = TP / (TN + FP)
+    recall = TP / (TP + FN) 
+    from sklearn.metrics import PrecisionRecallDisplay
+
+    display = PrecisionRecallDisplay.from_estimator(
+        model, self.X, y_pred, name="LinearSVC")
+    _ = display.ax_.set_title("Precision-Recall curve")
